@@ -84,5 +84,25 @@ public class FlattenResultTest {
 	public static String addISRight(Integer i, String s) {
 		return "(" + i + " + " + s + ")";
 	}
+	
+	@Test
+	public void list_should_be_able_to_be_filtered(){
+		List<Result<Integer>> list = List.list(Result.success(1), Result.success(2), Result.failure("abc"));
+
+		List<Result<Integer>> result = list.filter(a -> a.isSuccess());
+		
+		List<Result<Integer>> expect = List.list(Result.success(1), Result.success(2));
+		assertEquals(expect, result);
+	}
+
+	/*@Test
+	public void list_should_sequence_option(){
+		List<Option<Integer>> list = List.list(Option.some(1), Option.some(2), Option.some(3));
+		
+		Option<List<Integer>> option = List.sequenceOption(list);
+		
+		List<Integer> expect = List.list(1,2,3);
+		assertEquals(expect, option);
+	}*/
 
 }

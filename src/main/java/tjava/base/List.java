@@ -136,6 +136,19 @@ public abstract class List<A> {
 	}
 
 	public static <A> List<A> flattenResult(List<Result<A>> list) {
-		return list.foldRight((List<A>)list(), y->x->y.isSuccess()?x.con(y.getContent()):x);
+		return list.foldRight(list(), y->x->y.isSuccess()?x.con(y.getContent()):x);
+	}
+	
+	public static <A> Result<List<A>> sequence(List<Result<A>> input){
+		return null;
+	}
+
+/*	public static <A> Option<List<A>> sequenceOption(List<Option<A>> input){
+		return input.foldRight(Option.some(List.list()),
+				x -> y -> Option.map2(x, y, a -> b -> b.cons(a)));
+	}*/
+
+	public List<A> filter(Function<A, Boolean> fun) {
+		return foldRight(list(), y->x->fun.apply(y)?x.con(y):x);
 	}
 }

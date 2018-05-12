@@ -53,6 +53,11 @@ public interface Result<T> {
 		public T getContent() {
 			return value;
 		}
+
+		@Override
+		public boolean isFailure() {
+			return false;
+		}
 	}
 
 	public class Failure<T> implements Result<T> {
@@ -93,5 +98,12 @@ public interface Result<T> {
 		public T getContent() {
 			throw new IllegalAccessError();
 		}
+
+		@Override
+		public boolean isFailure() {
+			return true;
+		}
 	}
+
+	boolean isFailure();
 }
