@@ -26,18 +26,4 @@ public class TestToCurry {
 	
 	Function<Tuple<Integer, Integer>, Integer> tuplePlus = a -> a._1 + a._2;
 	
-	@Test
-	public void testToCurryTuple() {
-		assertEquals(tuplePlus.apply(new Tuple<>(1,4)), 
-				Utils.curry(tuplePlus).apply(1).apply(4));
-	}
-
-	Function<Integer, Function<Integer, Integer>> subtract = a -> b -> a - b;
-	
-	@Test
-	public void testToReverseArgs() {
-		assertEquals(4, Utils.reverseArgs(subtract).apply(5).apply(9).intValue());
-	}
-
-
 }
