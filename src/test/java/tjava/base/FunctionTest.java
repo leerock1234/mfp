@@ -82,4 +82,39 @@ public class FunctionTest {
 
         assertEquals(4, curriedResult.apply(8).apply(2).intValue());
     }
+
+    @Test
+    public void should_be_able_to_reverse_parameter(){
+        Function<Integer,Function<Integer, Integer>> l = x->y->x / y;
+        Function<Integer,Function<Integer, Integer>> result = Function.reverseParameter(l);
+
+        assertEquals(0, l.apply(2).apply(8).intValue());
+        assertEquals(4, result.apply(2).apply(8).intValue());
+    }
+
+    @Test
+    public void should_be_able_to_compose_all(){
+        Function<Integer, Integer> l1 = x->x+1;
+        Function<Integer, Integer> l2 = x->x*2;
+        Function<Integer, Integer> l3 = x->x+2;
+        List<Function<Integer, Integer>> list = List.list(l1, l2, l3);
+
+        assertEquals(8, Function.composeAll(list).apply(2).intValue());
+    }
+
+    @Test
+    public void should_be_able_to_compose_all_a_lot(){
+        List<Function<Integer, Integer>> list = List.NIL;
+        for(int i=1;i<=1000;i++){
+            final int j=i;
+            list = list.con(x->x+j);
+        }
+        for(int i=2;i<=1000;i++){
+            final int j=i;
+            list = list.con(x->x-j);
+        }
+        list = list.con(x->x+10);
+
+        assertEquals(13, Function.composeAll(list).apply(2).intValue());
+    }
 }

@@ -18,6 +18,14 @@ public interface Function<T, U> {
         return x->y->l.apply(new Tuple<X,Y>(x,y));
     }
 
+    static <X,Y,Z> Function<X,Function<Y,Z>> reverseParameter(Function<Y,Function<X,Z>> l) {
+        return x->y->l.apply(y).apply(x);
+    }
+
+    static <U> Function<U,U> composeAll(List<Function<U,U>> list) {
+        return list.foldLeft(Function.identity(),x->y->Function.compose(x,y));
+    }
+
     U apply(T arg);
 
 	/**

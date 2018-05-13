@@ -2,6 +2,8 @@ package tjava.base;
 
 import static tjava.base.TailCall.ret;
 import static tjava.base.TailCall.sus;
+import static tjava.base.Case.*;
+import static tjava.base.Result.*;
 
 public abstract class List<A> {
 
@@ -10,7 +12,9 @@ public abstract class List<A> {
 	public abstract List<A> tail();
 
 	public abstract boolean isEmpty();
-	
+
+	public abstract <U> List<U> map(Function<A, U> f) ;
+
 	public List<A> con(A head){
 		return new Cons(head, this);
 	}
@@ -21,9 +25,21 @@ public abstract class List<A> {
 	private List() {
 	}
 
+	public abstract int size();
+
 	private static class Nil<A> extends List<A> {
 
+		@Override
+		public <U> List<U> map(Function<A, U> f) {
+		    return new Nil<U>();
+        }
+
 		private Nil() {
+		}
+
+		@Override
+		public int size() {
+			return 0;
 		}
 
 		@Override
@@ -54,6 +70,19 @@ public abstract class List<A> {
 
 	private static class Cons<A> extends List<A> {
 
+	    int size;
+
+		@Override
+		public <U> List<U> map(Function<A, U> f) {
+			Function<A, Function<List<U>, List<U>>> transformF = a->u->u.con(f.apply(a));
+		    return foldRight(new Nil<U>(), transformF);
+		}
+
+		@Override
+		public int size() {
+			return size;
+		}
+
 		private final A head;
 		private final List<A> tail;
 
@@ -77,6 +106,7 @@ public abstract class List<A> {
 		private Cons(A head, List<A> tail) {
 			this.head = head;
 			this.tail = tail;
+			this.size = tail.size() + 1;
 		}
 
 		@Override
@@ -100,10 +130,11 @@ public abstract class List<A> {
 		return NIL;
 	}
 
+
 	@SafeVarargs
 	public static <A> List<A> list(A... a) {
 		List<A> n = list();
-		for (int i = a.length - 1; i >= 0; i--) {
+		for (int i = 0; i < a.length; i++) {
 			n = new Cons<>(a[i], n);
 		}
 		return n;
@@ -151,4 +182,17 @@ public abstract class List<A> {
 	public List<A> filter(Function<A, Boolean> fun) {
 		return foldRight(list(), y->x->fun.apply(y)?x.con(y):x);
 	}
+
+	public static <T> List<T> unfold(T seed, Function<T, T> f, Function<T, Boolean> p){
+	    return _unfold(List.list(seed), f, p).eval();
+	}
+
+	private static <T> TailCall<List<T>> _unfold(List<T> list, Function<T, T> nextValue, Function<T, Boolean> isStop) {
+		Function<List<T>, Result<TailCall<List<T>>>> matcher = s -> match(
+				mcase(() -> (success(ret(s)))),
+				mcase(() -> isStop.apply(nextValue.apply(s.head())), () -> success(sus(() -> _unfold(s.con(nextValue.apply(s.head())), nextValue, isStop))))
+		);
+		return matcher.apply(list).getContent();
+	}
+
 }
