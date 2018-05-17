@@ -6,7 +6,6 @@ import org.junit.Test;
 
 import tjava.base.Function;
 import tjava.base.Tuple;
-import tjava.base.Utils;
 
 public class TestToCurry {
 	

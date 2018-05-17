@@ -40,7 +40,7 @@ public class ListTest {
 
     @Test
     public void rangeMethod(){
-        List<Integer> result = Utils.range(2,5);
+        List<Integer> result = ListUtils.range(2,5);
 
         assertEquals(List.list(2,3,4), result);
     }

@@ -1,19 +1,44 @@
 package tjava.base;
 
+import java.util.function.Supplier;
+
 public abstract class Option<A> {
 
   @SuppressWarnings("rawtypes")
   private static Option none = new None();
 
   public abstract A getOrThrow();
+  public abstract A getOrElse(Supplier<A> defaultValue);
+  public abstract boolean isSome();
+
+  public Option<A> orElse(Supplier<Option<A>> defaultValue) {
+    return OptionUtils.map(this, x -> this).getOrElse(defaultValue);
+  }
+
+  public abstract Option<A> filter(Function<A, Boolean> fun) ;
 
   private Option() {}
 
   private static class None<A> extends Option<A> {
 
     @Override
+    public boolean isSome() {
+      return false;
+    }
+
+    @Override
+    public Option<A> filter(Function<A, Boolean> fun) {
+      return this;
+    }
+
+    @Override
     public A getOrThrow() {
       throw new IllegalStateException("getOrThrow called on None");
+    }
+
+    @Override
+    public A getOrElse(Supplier<A> defaultValue) {
+      return defaultValue.get();
     }
 
     private None() {}
@@ -33,8 +58,23 @@ public abstract class Option<A> {
     }
 
     @Override
+    public Option<A> filter(Function<A, Boolean> fun) {
+       return fun.apply(value) ? this : Option.none();
+    }
+
+    @Override
+    public boolean isSome() {
+      return true;
+    }
+
+    @Override
     public A getOrThrow() {
       return this.value;
+    }
+
+    @Override
+    public A getOrElse(Supplier<A> defaultValue) {
+      return value;
     }
 
     @Override
