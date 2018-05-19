@@ -57,6 +57,42 @@ public class OptionUtilsTest {
         assertEquals(1, onlyNature.apply(Option.some(1)).getOrThrow().intValue());
     }
 
+    @Test
+    public void shouldMap2WithOption(){
+        assertEquals(Option.some(3), OptionUtils.map2(Option.some(1), Option.some(2), a->b->a+b));
+    }
+
+    @Test
+    public void map2shouldReturnNoneIfFirstParameterIsNone(){
+        assertEquals(Option.none(), OptionUtils.map2(Option.<Integer>none(), Option.some(2), a->b->a+b));
+    }
+
+    @Test
+    public void map2shouldReturnNoneIfSecondParameterIsNone(){
+        assertEquals(Option.none(), OptionUtils.map2(Option.some(2), Option.<Integer>none(), a->b->a+b));
+    }
+
+    @Test
+    public void shouldMap3WithOption(){
+        assertEquals(Option.some(6), OptionUtils.map3(Option.some(1), Option.some(2), Option.some(3), a->b->c->a+b+c));
+    }
+
+    @Test
+    public void map3shouldNoneIfAnyParmIsNone(){
+        assertEquals(Option.none(), OptionUtils.map3(Option.<Integer>none(), Option.some(2), Option.some(3), a->b->c->a+b+c));
+        assertEquals(Option.none(), OptionUtils.map3(Option.some(1), Option.<Integer>none(), Option.some(3), a->b->c->a+b+c));
+        assertEquals(Option.none(), OptionUtils.map3(Option.some(1), Option.some(2), Option.<Integer>none(), a->b->c->a+b+c));
+    }
+
+    @Test
+    public void appMapShouldWork(){
+        assertEquals(Option.some(2), OptionUtils.appMap(Option.some(1), Option.some(x->x+1)));
+    }
+
+    @Test
+    public void appMapShouldHandleNone(){
+        assertEquals(Option.none(), OptionUtils.appMap(Option.some(1), Option.none()));
+    }
 }
 
 class AClass {

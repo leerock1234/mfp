@@ -15,7 +15,7 @@ public abstract class List<A> {
 
 	public abstract <U> List<U> map(Function<A, U> f) ;
 
-	public List<A> con(A head){
+	public List<A> cons(A head){
 		return new Cons(head, this);
 	}
 
@@ -74,7 +74,7 @@ public abstract class List<A> {
 
 		@Override
 		public <U> List<U> map(Function<A, U> f) {
-			Function<A, Function<List<U>, List<U>>> transformF = a->u->u.con(f.apply(a));
+			Function<A, Function<List<U>, List<U>>> transformF = a->u->u.cons(f.apply(a));
 		    return foldRight(new Nil<U>(), transformF);
 		}
 
@@ -158,16 +158,16 @@ public abstract class List<A> {
 	
 	public static <A> List<A> reverse(List<A> list){
 		if (list.isEmpty()) return list;
-		return reverse_(list(list.head()), list.tail());
+		return reverse_(list(list.head()), list.tail()).eval();
 	}
 
-	public static <A> List<A> reverse_(List<A> result, List<A> list){
-		if (list.isEmpty()) return result;
-		return reverse_(result.con(list.head()), list.tail());
+	public static <A> TailCall<List<A>> reverse_(List<A> result, List<A> list){
+		if (list.isEmpty()) return ret(result);
+		return sus(() -> reverse_(result.cons(list.head()), list.tail()));
 	}
 
 	public static <A> List<A> flattenResult(List<Result<A>> list) {
-		return list.foldRight(list(), y->x->y.isSuccess()?x.con(y.getContent()):x);
+		return list.foldRight(list(), y->x->y.isSuccess()?x.cons(y.getContent()):x);
 	}
 	
 	public static <A> Result<List<A>> sequence(List<Result<A>> input){
@@ -180,7 +180,7 @@ public abstract class List<A> {
 	}*/
 
 	public List<A> filter(Function<A, Boolean> fun) {
-		return foldRight(list(), y->x->fun.apply(y)?x.con(y):x);
+		return foldRight(list(), y->x->fun.apply(y)?x.cons(y):x);
 	}
 
 	public static <T> List<T> unfold(T seed, Function<T, T> f, Function<T, Boolean> p){
@@ -190,7 +190,7 @@ public abstract class List<A> {
 	private static <T> TailCall<List<T>> _unfold(List<T> list, Function<T, T> nextValue, Function<T, Boolean> isStop) {
 		Function<List<T>, Result<TailCall<List<T>>>> matcher = s -> match(
 				mcase(() -> (success(ret(s)))),
-				mcase(() -> isStop.apply(nextValue.apply(s.head())), () -> success(sus(() -> _unfold(s.con(nextValue.apply(s.head())), nextValue, isStop))))
+				mcase(() -> isStop.apply(nextValue.apply(s.head())), () -> success(sus(() -> _unfold(s.cons(nextValue.apply(s.head())), nextValue, isStop))))
 		);
 		return matcher.apply(list).getContent();
 	}

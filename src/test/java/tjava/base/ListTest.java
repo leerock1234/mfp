@@ -45,4 +45,25 @@ public class ListTest {
         assertEquals(List.list(2,3,4), result);
     }
 
+    @Test
+    public void sequenceOption(){
+        List<Option<Integer>> list = List.list(Option.some(1), Option.some(2), Option.some(3));
+
+        assertEquals(Option.some(List.list(1,2,3)), ListUtils.sequence(list));
+    }
+
+    @Test
+    public void sequenceToGetNone(){
+        List<Option<Integer>> list = List.list(Option.some(1), Option.none(), Option.some(3));
+
+        assertEquals(Option.none(), ListUtils.sequence(list));
+    }
+
+    @Test
+    public void sequenceLargeOption(){
+        List<Option<Integer>> list = ListUtils.range(0,10000).map(x->Option.some(x));
+
+        ListUtils.sequence(list);
+    }
+
 }

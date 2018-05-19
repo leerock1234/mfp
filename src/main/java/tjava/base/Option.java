@@ -1,5 +1,6 @@
 package tjava.base;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public abstract class Option<A> {
@@ -19,7 +20,18 @@ public abstract class Option<A> {
 
   private Option() {}
 
+
+
   private static class None<A> extends Option<A> {
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof None;
+    }
 
     @Override
     public boolean isSome() {
@@ -50,6 +62,19 @@ public abstract class Option<A> {
   }
 
   private static class Some<A> extends Option<A> {
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Some<?> some = (Some<?>) o;
+      return Objects.equals(value, some.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(value);
+    }
 
     private final A value;
 

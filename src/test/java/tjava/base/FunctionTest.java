@@ -107,13 +107,13 @@ public class FunctionTest {
         List<Function<Integer, Integer>> list = List.NIL;
         for(int i=1;i<=1000;i++){
             final int j=i;
-            list = list.con(x->x+j);
+            list = list.cons(x->x+j);
         }
         for(int i=2;i<=1000;i++){
             final int j=i;
-            list = list.con(x->x-j);
+            list = list.cons(x->x-j);
         }
-        list = list.con(x->x+10);
+        list = list.cons(x->x+10);
 
         assertEquals(13, Function.composeAll(list).apply(2).intValue());
     }
