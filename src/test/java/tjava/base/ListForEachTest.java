@@ -11,7 +11,7 @@ public class ListForEachTest {
 
     Set<String> stringSet;
 
-    @Test
+/*    @Test
     public void canMapToEffect(){
         stringSet = new HashSet<>();
         List list = List.list(1,2,3,4);
@@ -24,7 +24,7 @@ public class ListForEachTest {
         expectSet.add("3");
         expectSet.add("4");
         assertEquals(expectSet, stringSet);
-    }
+    }*/
 
     private class PrintEffect implements Effect<Integer> {
         @Override

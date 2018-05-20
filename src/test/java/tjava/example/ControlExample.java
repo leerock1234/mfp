@@ -18,10 +18,10 @@ public class ControlExample {
             System.err.println("Error message logged: " + s);
 
     public static void main(String... args) {
-        emailChecker.apply("this.is@my.email").bind(success, failure);
+/*        emailChecker.apply("this.is@my.email").bind(success, failure);
         emailChecker.apply(null).bind(success, failure);
         emailChecker.apply("").bind(success, failure);
-        emailChecker.apply("john.doe@acme.com").bind(success, failure);
+        emailChecker.apply("john.doe@acme.com").bind(success, failure);*/
     }
 
     static Function<String, Result<String>> emailChecker = s -> match(

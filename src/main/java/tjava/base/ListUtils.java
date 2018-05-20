@@ -7,6 +7,10 @@ public class ListUtils {
 	}
 
 	public static <A> Option<List<A>> sequence(List<Option<A>> list) {
-		return list.foldRight(Option.some(List.list()), oo->oa->OptionUtils.flatMap(oa, la->OptionUtils.map(oo, x->la.cons(x))));
+		return traverse(list, x->x);
+	}
+
+	public static <A,B> Option<List<B>> traverse(List<A> list, Function<A, Option<B>> fun) {
+		return list.foldRight(Option.some(List.list()), oo->oa->OptionUtils.map2(oa, fun.apply(oo), x->y->x.cons(y)));
 	}
 }

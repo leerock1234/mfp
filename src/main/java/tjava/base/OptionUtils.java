@@ -28,11 +28,7 @@ public class OptionUtils {
     }
 
     public static <A,B> Option<B> appMap(Option<A> option, Option<Function<A, B>> f){
-        try {
-            return map(option, f.getOrThrow());
-        }catch(RuntimeException e){
-            return Option.none();
-        }
+        return flatMap(option, o->map(f, fun->fun.apply(o)));
     }
 
     public static <A, B, C, D> Option<D> map3(Option<A> a,

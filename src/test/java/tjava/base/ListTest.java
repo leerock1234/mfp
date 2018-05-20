@@ -66,4 +66,17 @@ public class ListTest {
         ListUtils.sequence(list);
     }
 
+    @Test
+    public void traverseOption(){
+        List<Integer> list = List.list(1, 2, 5);
+
+        assertEquals(Option.some(List.list(10,5,2)), ListUtils.traverse(list, x->Option.some(10/x)));
+    }
+
+    @Test
+    public void traverseToGetNone(){
+        List<Integer> list = List.list(1, 0, 5);
+
+        assertEquals(Option.none(), ListUtils.traverse(list, x->x==0?Option.none():Option.some(10/x)));
+    }
 }
