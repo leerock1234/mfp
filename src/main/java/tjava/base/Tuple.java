@@ -27,4 +27,8 @@ public class Tuple<T, U> {
 		result = prime * result + _2.hashCode();
 		return result;
 	}
+
+	public <B> B flatMap(Function<T, Function<U, B>> f){
+	    return f.apply(_1).apply(_2);
+    }
 }

@@ -123,9 +123,18 @@ public class ListTest {
     }
 
     @Test
-    public void flatMap(){
-        List<Integer> i = List.list(1,2,3);
+    public void flatMapEmptyList(){
+        List<Integer> i = List.list();
 
-        assertEquals(List.list(2,3,4), i.flatMap(x->List.list(x+1)));
+        assertEquals(List.list(), i.flatMap(x->List.list(x+1)));
     }
+
+    @Test
+    public void conList(){
+        List<Integer> i = List.list(1,2,3);
+        List<Integer> c = List.list(4,5,6);
+
+        assertEquals(List.list(1,2,3,4,5,6), i.cons(c));
+    }
+
 }

@@ -31,6 +31,20 @@ public class ListUtils {
 	}
 
 	public static <A,B,C> List<C> map2(List<A> la, List<B> lb, Function<A, Function<B, C>> f){
-	    return null;
+	    return la.flatMap(a->lb.map(b->f.apply(a).apply(b)));
     }
+
+	public static <A,B,C> List<C> product(List<A> la, List<B> lb, Function<A, Function<B, C>> f){
+		return map2(la,lb, f);
+	}
+
+    public static <A, B, C> Tuple<List<A>, List<B>> unzip(List<C> list, Function<C, Tuple<A,B>> f){
+		return list.foldRight(new Tuple<List<A>, List<B>>(List.NIL, List.NIL),
+				c->t->(f.apply(c)).<Tuple<List<A>, List<B>>>flatMap(c_1->c_2->
+						new Tuple(t._1.cons(c_1),t._2.cons(c_2))));
+	}
+
+	public static <A, B> Tuple<List<A>, List<B>> unzip(List<Tuple<A, B>> list){
+		return unzip(list, x->new Tuple(x._1, x._2));
+	}
 }
