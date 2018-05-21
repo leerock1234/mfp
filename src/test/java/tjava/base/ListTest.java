@@ -79,4 +79,53 @@ public class ListTest {
 
         assertEquals(Option.none(), ListUtils.traverse(list, x->x==0?Option.none():Option.some(10/x)));
     }
+
+    @Test
+    public void flattenResult(){
+        List<Result<Integer>> rIntegers = List.list(Result.success(1),Result.success(2), Result.success(3));
+
+        assertEquals(List.list(1,2,3), List.flattenResult(rIntegers));
+    }
+
+    @Test
+    public void sequence(){
+        List<Result<Integer>> rIntegers = List.list(Result.success(1),Result.success(2), Result.success(3));
+
+        assertEquals(Result.success(List.list(1,2,3)), List.sequence(rIntegers));
+    }
+
+    @Test
+    public void sequenceIncludingEmpty(){
+        List<Result<Integer>> rIntegers = List.list(Result.success(1),Result.empty(), Result.success(3));
+
+        assertEquals(Result.empty(), List.sequence(rIntegers));
+    }
+
+    @Test
+    public void sequenceIncludingFail(){
+        List<Result<Integer>> rIntegers = List.list(Result.success(1),Result.failure("inFail"), Result.success(3));
+
+        assertEquals(Result.failure("inFail"), List.sequence(rIntegers));
+    }
+
+    @Test
+    public void sequenceEmptyList(){
+        List<Result<Integer>> rIntegers = List.list();
+
+        assertEquals(Result.success(List.list()), List.sequence(rIntegers));
+    }
+
+    @Test
+    public void flatMap(){
+        List<Integer> i = List.list(1,2,3);
+
+        assertEquals(List.list(2,3,4), i.flatMap(x->List.list(x+1)));
+    }
+
+    @Test
+    public void flatMap(){
+        List<Integer> i = List.list(1,2,3);
+
+        assertEquals(List.list(2,3,4), i.flatMap(x->List.list(x+1)));
+    }
 }

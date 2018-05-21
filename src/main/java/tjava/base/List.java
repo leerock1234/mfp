@@ -14,9 +14,14 @@ public abstract class List<A> {
 	public abstract boolean isEmpty();
 
 	public abstract <U> List<U> map(Function<A, U> f) ;
+	public abstract <U> List<U> flatMap(Function<A, List<U>> f) ;
 
 	public List<A> cons(A head){
 		return new Cons(head, this);
+	}
+
+	public List<A> cons(List<A> list){
+		return list.foldRight(this, x->l->l.cons(x));
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -27,6 +32,12 @@ public abstract class List<A> {
 
 	public abstract int size();
 
+	public abstract Result<A> headOption();
+
+	public Result<A> lastOption(){
+		return foldLeft(Result.empty(), result->a->Result.success(a));
+	}
+
 	private static class Nil<A> extends List<A> {
 
 		@Override
@@ -34,12 +45,22 @@ public abstract class List<A> {
 		    return new Nil<U>();
         }
 
+		@Override
+		public <U> List<U> flatMap(Function<A, List<U>> f) {
+			return NIL;
+		}
+
 		private Nil() {
 		}
 
 		@Override
 		public int size() {
 			return 0;
+		}
+
+		@Override
+		public Result<A> headOption() {
+			return Result.empty();
 		}
 
 		@Override
@@ -66,11 +87,21 @@ public abstract class List<A> {
 		public boolean isEmpty() {
 			return true;
 		}
+
+		@Override
+		public String toString() {
+			return "Nil";
+		}
 	}
 
 	private static class Cons<A> extends List<A> {
 
 	    int size;
+
+		@Override
+		public String toString() {
+			return head + ", " + this.tail().toString();
+		}
 
 		@Override
 		public <U> List<U> map(Function<A, U> f) {
@@ -79,8 +110,19 @@ public abstract class List<A> {
 		}
 
 		@Override
+		public <U> List<U> flatMap(Function<A, List<U>> f) {
+			Function<A, Function<List<U>, List<U>>> transformF = a->u->u.cons(f.apply(a));
+			return foldRight(new Nil<U>(), transformF);
+		}
+
+		@Override
 		public int size() {
 			return size;
+		}
+
+		@Override
+		public Result<A> headOption() {
+			return Result.success(head());
 		}
 
 		private final A head;
@@ -169,9 +211,9 @@ public abstract class List<A> {
 	public static <A> List<A> flattenResult(List<Result<A>> list) {
 		return list.foldRight(list(), y->x->y.isSuccess()?x.cons(y.getContent()):x);
 	}
-	
+
 	public static <A> Result<List<A>> sequence(List<Result<A>> input){
-		return null;
+		return input.foldRight(Result.success(List.list()), oneResult->resultList->ResultUtils.map2(resultList, oneResult, l->o->l.cons(o)));
 	}
 
 /*	public static <A> Option<List<A>> sequenceOption(List<Option<A>> input){

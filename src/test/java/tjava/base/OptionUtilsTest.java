@@ -93,6 +93,7 @@ public class OptionUtilsTest {
     public void appMapShouldHandleNone(){
         assertEquals(Option.none(), OptionUtils.appMap(Option.some(1), Option.none()));
     }
+
 }
 
 class AClass {
