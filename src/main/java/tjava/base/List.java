@@ -25,6 +25,11 @@ public abstract class List<A> {
         return list.foldRight(this, x -> l -> l.cons(x));
     }
 
+    public boolean exists(Function<A, Boolean> p) {
+        //TODO: still have some problem
+        return foldLeft(false, x -> y -> x || p.apply(y));
+    }
+
     public Result<A> getAt(int index) {
         return index < 0 || index >= size()
                 ? Result.failure("Index out of bound")
@@ -64,6 +69,10 @@ public abstract class List<A> {
 
     public Result<A> lastOption() {
         return foldLeft(Result.empty(), result -> a -> Result.success(a));
+    }
+
+    public List<A> first(Integer i) {
+        return this.splitAt(i)._1;
     }
 
     private static class Nil<A> extends List<A> {
