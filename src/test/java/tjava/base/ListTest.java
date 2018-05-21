@@ -3,6 +3,8 @@ package tjava.base;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
 public class ListTest {
 
@@ -136,4 +138,25 @@ public class ListTest {
 
         assertEquals(List.list(1,2,3,4,5,6), i.cons(c));
     }
+
+    @Test
+    public void exist(){
+        List<Integer> i = List.list(1,2,3);
+
+        assertTrue(i.exists(x->x>0));
+        assertTrue(i.exists(x->x>1));
+        assertTrue(i.exists(x->x>2));
+        assertFalse(i.exists(x->x>3));
+    }
+
+    @Test
+    public void forAll(){
+        List<Integer> i = List.list(1,2,3);
+
+        assertTrue(i.forAll(x->x>0));
+        assertFalse(i.forAll(x->x>1));
+        assertTrue(i.forAll(x->x<4));
+        assertFalse(i.forAll(x->x<3));
+    }
+
 }

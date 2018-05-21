@@ -1,5 +1,8 @@
 package tjava.base;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+
 import static tjava.base.TailCall.ret;
 import static tjava.base.TailCall.sus;
 import static tjava.base.Case.*;
@@ -25,9 +28,27 @@ public abstract class List<A> {
         return list.foldRight(this, x -> l -> l.cons(x));
     }
 
-    public boolean exists(Function<A, Boolean> p) {
-        //TODO: still have some problem
+    public Boolean exists(Function<A, Boolean> p) {
         return foldLeft(false, x -> y -> x || p.apply(y));
+    }
+
+	public Boolean forAll(Function<A, Boolean> p) {
+		return foldLeft(true, x -> y -> x && p.apply(y));
+	}
+
+    public <B> Result<List<B>> parMap(ExecutorService es, Function<A, B> g) {
+        try {
+            return Result.success(this.map(x -> es.submit(() -> g.apply(x)))
+                    .map(x -> {
+                        try {
+                            return x.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }));
+        } catch (Exception e) {
+            return Result.failure(e);
+        }
     }
 
     public Result<A> getAt(int index) {
