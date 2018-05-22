@@ -41,13 +41,35 @@ public abstract class Stream<A> {
         return List.reverse(toList(this, List.list()).eval());
     }
 
+    public <B> Stream<B> map(Function<A, B> f) {
+        return foldRight(Stream::empty, a -> b -> cons(() -> f.apply(a), b));
+    }
+
+    public Stream<A> filter(Function<A, Boolean> f) {
+        //return foldRight(Stream::empty, a -> b -> f.apply(a)?cons(()->a, b):b.get());
+        return _filter(f).eval();
+    }
+
+    private TailCall<Stream<A>> _filter(Function<A, Boolean> f) {
+        TailCall<Stream<A>> sa = ret(Stream.empty());
+        return foldRight(()->sa , a -> b ->
+            f.apply(a)?ret(cons(()->a, ()->b.get().eval())):sus(()->b.get())
+        );
+    }
+
+    public Stream<A> append(Supplier<Stream<A>> s) {
+        return foldRight(s, a -> b -> cons(() -> a, b));
+    }
+
+    public <B> Stream<B> flatMap(Function<A, Stream<B>> f) {
+        return foldRight(Stream::empty, a -> b -> f.apply(a).append(b));
+    }
+
     private TailCall<List<A>> toList(Stream<A> s, List<A> acc) {
         return s.isEmpty()
                 ? ret(acc)
                 : sus(() -> toList(s.tail(), List.list(s.head()).cons(acc)));
     }
-
-    public abstract <B> Stream<B> map(Function<A,B> f);
 
     public <B> B strictFoldRight(Supplier<B> z,
                                  Function<A, Function<Supplier<B>, B>> f){
@@ -56,8 +78,15 @@ public abstract class Stream<A> {
 
     protected abstract <B> TailCall<B> _strictFoldRight(Supplier<B> z,
                                                         Function<A, Function<Supplier<B>, B>> f);
+
     public abstract <B> B foldRight(Supplier<B> z,
                                     Function<A, Function<Supplier<B>, B>> f);
+
+    public static <A, S> Stream<A> unfold(S z,
+                                          Function<S, Result<Tuple<A, S>>> f) {
+        return f.apply(z).map(x -> cons(() -> x._1,
+                () -> unfold(x._2, f))).getOrElse(empty());
+    }
 
     private Stream() {
     }
@@ -104,11 +133,6 @@ public abstract class Stream<A> {
 
         protected TailCall<Boolean> _exists(Function<A, Boolean> p) {
             return ret(false);
-        }
-
-        @Override
-        public <B> Stream<B> map(Function<A, B> f) {
-            return (Stream<B>)this;
         }
 
         @Override
@@ -205,11 +229,6 @@ public abstract class Stream<A> {
         }
 
         @Override
-        public <B> Stream<B> map(Function<A, B> f) {
-            return Stream.cons(smap(head,f), ()->tail().map(f));
-        }
-
-        @Override
         protected <B> TailCall<B> _strictFoldRight(Supplier<B> z, Function<A, Function<Supplier<B>, B>> f) {
             B b = f.apply(head()).apply(z);
             return sus(()->this.tail()._strictFoldRight(()->b, f));
@@ -219,14 +238,13 @@ public abstract class Stream<A> {
         public <B> B foldRight(Supplier<B> z, Function<A, Function<Supplier<B>, B>> f) {
             return f.apply(head()).apply(() -> tail().foldRight(z, f));
         }
-
     }
 
-    static <A> Stream<A> cons(Supplier<A> hd, Supplier<Stream<A>> tl) {
+    public static <A> Stream<A> cons(Supplier<A> hd, Supplier<Stream<A>> tl) {
         return new Cons<>(hd, tl);
     }
 
-    static <A> Stream<A> cons(Supplier<A> hd, Stream<A> tl) {
+    public static <A> Stream<A> cons(Supplier<A> hd, Stream<A> tl) {
         return new Cons<>(hd, () -> tl);
     }
 
@@ -236,7 +254,15 @@ public abstract class Stream<A> {
     }
 
     public static Stream<Integer> from(int i) {
-        return cons(() -> i, () -> from(i + 1));
+        return iterate(i, x->x + 1);
+    }
+
+    public static <A> Stream<A> repeat(A a) {
+        return iterate(a, x->a);
+    }
+
+    public static <A> Stream<A> iterate(A seed, Function<A, A> f){
+        return unfold(seed, x->Result.success(new Tuple<>(x,f.apply(x))));
     }
 }
 

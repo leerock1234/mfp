@@ -95,7 +95,7 @@ public class StreamTest {
     public void foldRight(){
         Stream<Integer> list = Stream.from(1).take(10);
 
-        assertEquals(55, list.<Integer>foldRight(()->0, x-> y->y.get()+x).intValue());
+        assertEquals(55, list.foldRight(()->0, x-> y->y.get()+x).intValue());
     }
 
     @Test(expected = StackOverflowError.class)
@@ -117,4 +117,93 @@ public class StreamTest {
         sList = sList.tail();
         assertEquals("3", sList.head());
     }
+
+    @Test
+    public void flatMap(){
+        Stream<Integer> list = Stream.from(0);
+
+        Stream<String> sList = list.flatMap(x->Stream.cons(()->String.valueOf(x+1), Stream.empty()));
+
+        assertEquals("1", sList.head());
+        sList = sList.tail();
+        assertEquals("2", sList.head());
+        sList = sList.tail();
+        assertEquals("3", sList.head());
+    }
+
+    @Test
+    public void filter(){
+        Stream<Integer> list = Stream.from(0);
+
+        Stream<Integer> sList = list.filter(x->x%2==0);
+
+        assertEquals(0, sList.head().intValue());
+        sList = sList.tail();
+        assertEquals(2, sList.head().intValue());
+        sList = sList.tail();
+        assertEquals(4, sList.head().intValue());
+    }
+
+    @Test
+    public void filterBigVolumne(){
+        Stream<Integer> list = Stream.from(0);
+
+        Stream<Integer> sList = list.filter(x->x>10000);
+
+        assertEquals(10001, sList.head().intValue());
+        sList = sList.tail();
+        assertEquals(10002, sList.head().intValue());
+    }
+
+    @Test
+    public void append(){
+        Stream<Integer> list = Stream.from(0);
+
+        Stream<Integer> alist = Stream.from(0).take(2);
+
+        Stream<Integer> adList = alist.append(()->list);
+
+        assertEquals(0, adList.head().intValue());
+        adList = adList.tail();
+        assertEquals(1, adList.head().intValue());
+        adList = adList.tail();
+        assertEquals(0, adList.head().intValue());
+        adList = adList.tail();
+        assertEquals(1, adList.head().intValue());
+        adList = adList.tail();
+        assertEquals(2, adList.head().intValue());
+
+    }
+
+    @Test
+    public void repeat(){
+        Stream<String> list = Stream.repeat("abc");
+
+        assertEquals("abc", list.head());
+        list = list.tail();
+        assertEquals("abc", list.head());
+    }
+
+    @Test
+    public void iterate(){
+        Stream<Integer> list = Stream.iterate(2, x->x+2);
+
+        assertEquals(2, list.head().intValue());
+        list = list.tail();
+        assertEquals(4, list.head().intValue());
+    }
+
+    @Test
+    public void unfold(){
+        Stream<String> list = Stream.unfold(0, x->x<3?Result.success(new Tuple(String.valueOf(x),x+1)):Result.empty());
+
+        assertEquals("0", list.head());
+        list = list.tail();
+        assertEquals("1", list.head());
+        list = list.tail();
+        assertEquals("2", list.head());
+        list = list.tail();
+        assertTrue(list.isEmpty());
+    }
+
 }

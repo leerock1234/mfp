@@ -84,6 +84,14 @@ public class FunctionTest {
     }
 
     @Test
+    public void should_be_able_to_uncurry(){
+        Function<Integer, Function<Integer, Integer>> l = x->y->x/y;
+        Function<Tuple<Integer,Integer>, Integer> r = Function.unCurry(l);
+
+        assertEquals(4, r.apply(new Tuple(8,2)).intValue());
+    }
+
+    @Test
     public void should_be_able_to_reverse_parameter(){
         Function<Integer,Function<Integer, Integer>> l = x->y->x / y;
         Function<Integer,Function<Integer, Integer>> result = Function.reverseParameter(l);
