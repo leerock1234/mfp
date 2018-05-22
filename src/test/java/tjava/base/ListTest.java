@@ -159,4 +159,40 @@ public class ListTest {
         assertFalse(i.forAll(x->x<3));
     }
 
+    @Test
+    public void firstNormal(){
+        List<Integer> i = List.list(1,2,3,4);
+
+        assertEquals(List.list(3,4), i.first(2));
+    }
+
+    @Test
+    public void firstExceed(){
+        List<Integer> i = List.list(1,2,3,4,5);
+
+        assertEquals(List.list(2,3,4,5), i.first(4));
+        assertEquals(List.list(1,2,3,4,5), i.first(5));
+    }
+
+    @Test
+    public void firstEmpty(){
+        List<Integer> i = List.list();
+
+        assertEquals(List.list(), i.first(3));
+    }
+
+    @Test
+    public void firstBig(){
+        List<Integer> i = ListUtils.range(1,13000);
+
+        i.first(10000);
+    }
+
+    @Test
+    public void hasSubSeqBigVolumne(){
+        List<Integer> list = ListUtils.range(0,10000);
+        List<Integer> check = List.list(20000);
+
+        assertFalse(ListUtils.hasSubSeq(list, check));
+    }
 }

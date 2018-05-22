@@ -93,7 +93,13 @@ public abstract class List<A> {
     }
 
     public List<A> first(Integer i) {
-        return this.splitAt(i)._1;
+        return List.reverse(_first(List.list(), i).eval());
+    }
+
+    public TailCall<List<A>> _first(List<A> acc, Integer i){
+        return (isEmpty() || i<=0)
+                ? ret(acc)
+                : sus(()->tail()._first(acc.cons(head()), i-1));
     }
 
     private static class Nil<A> extends List<A> {
@@ -275,7 +281,7 @@ public abstract class List<A> {
     }
 
 /*	public static <A> Option<List<A>> sequenceOption(List<Option<A>> input){
-		return input.foldRight(Option.some(List.list()),
+		return input.strictFoldRight(Option.some(List.list()),
 				x -> y -> Option.map2(x, y, a -> b -> b.cons(a)));
 	}*/
 
