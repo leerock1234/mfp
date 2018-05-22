@@ -11,6 +11,7 @@ public abstract class Result<T> {
 
 	public abstract T getOrElse(final T defaultValue);
 	public abstract T getOrElse(final Supplier<T> defaultValue);
+    public abstract Result<T> orElse(final Supplier<Result<T>> defaultResult);
 	public abstract <U> Result<U> map(Function<T, U> f);
 	public abstract <U> Result<U> flatMap(Function<T, Result<U>> f);
 	/*public Result<T> orElse(Supplier<Result<T>> defaultValue);*/
@@ -24,6 +25,8 @@ public abstract class Result<T> {
 
     public abstract Result<RuntimeException> forEachOrException(Effect<T> ef);
 
+    public abstract Result<T> mapEmpty();
+
     private static class Empty<V> extends Result<V> {
 
         @Override
@@ -34,6 +37,11 @@ public abstract class Result<T> {
         @Override
         public Result<RuntimeException> forEachOrException(Effect<V> ef) {
             return empty();
+        }
+
+        @Override
+        public Result<V> mapEmpty() {
+            return Result.success(null);
         }
 
         public Empty() {
@@ -81,6 +89,11 @@ public abstract class Result<T> {
         public V getOrElse(Supplier<V> defaultValue) {
             return defaultValue.get();
         }
+
+        @Override
+        public Result<V> orElse(Supplier<Result<V>> defaultResult) {
+            return defaultResult.get();
+        }
     }
 
 	public static class Success<T> extends Result<T> {
@@ -90,6 +103,11 @@ public abstract class Result<T> {
         public Result<RuntimeException> forEachOrException(Effect<T> ef) {
             ef.apply(value);
             return empty();
+        }
+
+        @Override
+        public Result<T> mapEmpty() {
+            return Result.failure("is not empty");
         }
 
         public void forEachOrThrow(Effect<T> ef) {
@@ -142,6 +160,11 @@ public abstract class Result<T> {
         }
 
         @Override
+        public Result<T> orElse(Supplier<Result<T>> defaultResult) {
+            return Result.success(value);
+        }
+
+        @Override
         public <U> Result<U> map(Function<T, U> f) {
             try {
                 return Result.success(f.apply(value));
@@ -191,6 +214,11 @@ public abstract class Result<T> {
         @Override
         public <U> Result<U> flatMap(Function<T, Result<U>> f) {
             return Result.failure(exception);
+        }
+
+        @Override
+        public Result<T> mapEmpty() {
+            return Result.failure("is not empty");
         }
 
         @Override
