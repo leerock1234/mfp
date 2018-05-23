@@ -3,16 +3,20 @@ package tjava.base.collection;
 import tjava.base.Function;
 import tjava.base.List;
 import tjava.base.Result;
+import tjava.base.TailCall;
 
 import java.util.Objects;
 
-public abstract class Tree<A extends Comparable<A>> {
+import static tjava.base.utils.Math.log2nlz;
+import static tjava.base.utils.UnfoldUtils.unfold;
+
+public abstract class NTree<A extends Comparable<A>> {
     @SuppressWarnings("rawtypes")
-    private static Tree EMPTY = new Empty();
+    private static NTree EMPTY = new Empty();
     public abstract A value();
-    abstract Tree<A> left();
-    abstract Tree<A> right();
-    public abstract Tree<A> insert(A a);
+    abstract NTree<A> left();
+    abstract NTree<A> right();
+    public abstract NTree<A> insert(A a);
 
     public abstract boolean isEmpty();
 
@@ -27,11 +31,11 @@ public abstract class Tree<A extends Comparable<A>> {
 
     public abstract Result<A> max();
     public abstract Result<A> min();
-    protected abstract Tree<A> removeMerge(Tree<A> ta);
+    protected abstract NTree<A> removeMerge(NTree<A> ta);
 
-    public abstract Tree<A> remove(A a);
+    public abstract NTree<A> remove(A a);
 
-    public abstract Tree<A> merge(Tree<A> a);
+    public abstract NTree<A> merge(NTree<A> a);
 
     public abstract <B> B foldRight(B identity,
                                     Function<A, Function<B, B>> f,
@@ -46,18 +50,34 @@ public abstract class Tree<A extends Comparable<A>> {
     public abstract <B> B foldPostOrder(B identity,
                                         Function<B, Function<B, Function<A, B>>> f);
 
+    protected abstract NTree<A> rotateLeft();
+    protected abstract NTree<A> rotateRight();
 
-    private static class Empty<A extends Comparable<A>> extends Tree<A> {
+    public List<A> toListInOrderRight() {
+        return unBalanceRight(List.list(), this).eval();
+    }
+    private TailCall<List<A>> unBalanceRight(List<A> acc, NTree<A> tree) {
+        return tree.isEmpty()
+                ? TailCall.ret(acc)
+                : tree.left().isEmpty()
+                ? TailCall.sus(() ->
+                unBalanceRight(acc.cons(tree.value()), tree.right()))
+                : TailCall.sus(() -> unBalanceRight(acc, tree.rotateRight()));
+    }
+
+    protected abstract NTree<A> ins(A a);
+
+    private static class Empty<A extends Comparable<A>> extends NTree<A> {
         @Override
         public A value() {
             throw new IllegalStateException("value() called on empty");
         }
         @Override
-        Tree<A> left() {
+        NTree<A> left() {
             throw new IllegalStateException("left() called on empty");
         }
         @Override
-        Tree<A> right() {
+        NTree<A> right() {
             throw new IllegalStateException("right() called on empty");
         }
         @Override
@@ -65,8 +85,8 @@ public abstract class Tree<A extends Comparable<A>> {
             return "E";
         }
         @Override
-        public Tree<A> insert(A insertedValue) {
-            return new T<>(empty(), insertedValue, empty());
+        public NTree<A> insert(A insertedValue) {
+            return ins(insertedValue);
         }
 
         @Override
@@ -105,7 +125,7 @@ public abstract class Tree<A extends Comparable<A>> {
         }
 
         @Override
-        protected Tree<A> removeMerge(Tree<A> ta) {
+        protected NTree<A> removeMerge(NTree<A> ta) {
             return ta;
         }
 
@@ -120,12 +140,12 @@ public abstract class Tree<A extends Comparable<A>> {
         }
 
         @Override
-        public Tree<A> remove(A a) {
+        public NTree<A> remove(A a) {
             return this;
         }
 
         @Override
-        public Tree<A> merge(Tree<A> a) {
+        public NTree<A> merge(NTree<A> a) {
             return a;
         }
 
@@ -148,12 +168,27 @@ public abstract class Tree<A extends Comparable<A>> {
         public <B> B foldPostOrder(B identity, Function<B, Function<B, Function<A, B>>> f) {
             return identity;
         }
+
+        @Override
+        protected NTree<A> rotateLeft() {
+            return this;
+        }
+
+        @Override
+        protected NTree<A> rotateRight() {
+            return this;
+        }
+
+        @Override
+        protected NTree<A> ins(A a) {
+            return new T<>(empty(), a, empty());
+        }
     }
-    private static class T<A extends Comparable<A>> extends Tree<A> {
-        private final Tree<A> left;
-        private final Tree<A> right;
+    private static class T<A extends Comparable<A>> extends NTree<A> {
+        private final NTree<A> left;
+        private final NTree<A> right;
         private final A value;
-        private T(Tree<A> left, A value, Tree<A> right) {
+        private T(NTree<A> left, A value, NTree<A> right) {
             this.left = left;
             this.right = right;
             this.value = value;
@@ -167,11 +202,11 @@ public abstract class Tree<A extends Comparable<A>> {
             return value;
         }
         @Override
-        Tree<A> left() {
+        NTree<A> left() {
             return left;
         }
         @Override
-        Tree<A> right() {
+        NTree<A> right() {
             return right;
         }
         @Override
@@ -179,12 +214,18 @@ public abstract class Tree<A extends Comparable<A>> {
             return String.format("(T %s %s %s)", left, value, right);
         }
         @Override
-        public Tree<A> insert(A insertedValue) {
-            return insertedValue.compareTo(this.value) < 0
-                    ? new T<>(left.insert(insertedValue), this.value, right)
-                    : insertedValue.compareTo(this.value) > 0
-                    ? new T<>(left, this.value, right.insert(insertedValue))
-                    : new T<>(this.left, insertedValue, this.right);
+        public NTree<A> insert(A insertedValue) {
+            NTree<A> t = ins(insertedValue);
+            return t.height() > log2nlz(t.size()) * 20 ? balance(t) : t;
+        }
+
+        @Override
+        protected NTree<A> ins(A a) {
+            return a.compareTo(this.value) < 0
+                    ? new T<>(left.ins(a), this.value, right)
+                    : a.compareTo(this.value) > 0
+                    ? new T<>(left, this.value, right.ins(a))
+                    : new T<>(this.left, value, this.right);
         }
 
         @Override
@@ -221,7 +262,7 @@ public abstract class Tree<A extends Comparable<A>> {
         }
 
         @Override
-        protected Tree<A> removeMerge(Tree<A> ta) {
+        protected NTree<A> removeMerge(NTree<A> ta) {
             if (ta.isEmpty()) {
                 return this;
             }
@@ -249,7 +290,7 @@ public abstract class Tree<A extends Comparable<A>> {
         }
 
         @Override
-        public Tree<A> remove(A a) {
+        public NTree<A> remove(A a) {
             if (a.compareTo(this.value) < 0) {
                 return new T<>(left.remove(a), value, right);
             } else if (a.compareTo(this.value) > 0) {
@@ -260,7 +301,7 @@ public abstract class Tree<A extends Comparable<A>> {
         }
 
         @Override
-        public Tree<A> merge(Tree<A> a) {
+        public NTree<A> merge(NTree<A> a) {
             if (a.isEmpty()) {
                 return this;
             }
@@ -301,18 +342,35 @@ public abstract class Tree<A extends Comparable<A>> {
             return f.apply(left.foldPostOrder(identity, f))
                     .apply(right.foldPostOrder(identity, f)).apply(value);
         }
+
+        @Override
+        protected NTree<A> rotateLeft() {
+            return right.isEmpty()
+                    ? this
+                    : new T<>(new T<>(left, value, right.left()),
+                    right.value(), right.right());
+        }
+
+        @Override
+        protected NTree<A> rotateRight() {
+            return left.isEmpty()
+                    ? this
+                    : new T<>(left.left(), left.value(),
+                    new T<>(left.right(), value, right));
+        }
+
     }
     @SuppressWarnings("unchecked")
-    public static <A extends Comparable<A>> Tree<A> empty() {
+    public static <A extends Comparable<A>> NTree<A> empty() {
         return EMPTY;
     }
 
-    public static <A extends Comparable<A>> Tree<A> tree(List<A> list) {
+    public static <A extends Comparable<A>> NTree<A> tree(List<A> list) {
         return list.foldLeft(empty(), t -> t::insert);
     }
 
     @SafeVarargs
-    public static <A extends Comparable<A>> Tree<A> tree(A... as) {
+    public static <A extends Comparable<A>> NTree<A> tree(A... as) {
         return tree(List.list(as));
     }
 
@@ -324,8 +382,8 @@ public abstract class Tree<A extends Comparable<A>> {
         return lt(first, second) && lt(second, third);
     }
 
-    public static <A extends Comparable<A>> boolean ordered(Tree<A> left,
-                                                            A a, Tree<A> right) {
+    public static <A extends Comparable<A>> boolean ordered(NTree<A> left,
+                                                            A a, NTree<A> right) {
         return left.max().flatMap(lMax -> right.min().map(rMin ->
                 lt(lMax, a, rMin))).getOrElse(left.isEmpty() && right.isEmpty())
                 || left.min().mapEmpty().flatMap(ignore -> right.min().map(rMin ->
@@ -334,18 +392,44 @@ public abstract class Tree<A extends Comparable<A>> {
                 lt(lMax, a))).getOrElse(false);
     }
 
-    public static <A extends Comparable<A>> Tree<A> tree(Tree<A> t1,
-                                                         A a, Tree<A> t2) {
+    public static <A extends Comparable<A>> NTree<A> tree(NTree<A> t1,
+                                                          A a, NTree<A> t2) {
         return ordered(t1, a, t2)
                 ? new T<>(t1, a, t2)
                 : ordered(t2, a, t1)
                 ? new T<>(t2, a, t1)
-                : Tree.<A>empty().insert(a).merge(t1).merge(t2);
+                : NTree.<A>empty().insert(a).merge(t1).merge(t2);
     }
 
-    public <B extends Comparable<B>> Tree<B> map(Function<A, B> f) {
-        return foldPreOrder(Tree.<B>empty(),
-                i -> t1 -> t2 -> Tree.tree(t1, f.apply(i), t2));
+    public <B extends Comparable<B>> NTree<B> map(Function<A, B> f) {
+        return foldPreOrder(NTree.<B>empty(),
+                i -> t1 -> t2 -> NTree.tree(t1, f.apply(i), t2));
+    }
+
+    public static <A extends Comparable<A>> boolean isUnBalanced(NTree<A> tree) {
+        return Math.abs(tree.left().height() - tree.right().height())
+                > (tree.size() - 1) % 2;
+    }
+
+    public static <A extends Comparable<A>> NTree<A> balance(NTree<A> tree) {
+        return balance_(tree.toListInOrderRight().foldLeft(NTree.<A>empty(),
+                t -> a -> new T<>(empty(), a, t)));
+    }
+    public static <A extends Comparable<A>> NTree<A> balance_(NTree<A> tree) {
+        return !tree.isEmpty() && tree.height() > log2nlz(tree.size())
+                ? Math.abs(tree.left().height() - tree.right().height()) > 1
+                ? balance_(balanceFirstLevel(tree))
+                : new T<>(balance_(tree.left()), tree.value(),
+                balance_(tree.right()))
+                : tree;
+    }
+    private static <A extends Comparable<A>> NTree<A>
+    balanceFirstLevel(NTree<A> tree) {
+        return unfold(tree, t -> isUnBalanced(t)
+                ? tree.right().height() > tree.left().height()
+                ? Result.success(t.rotateLeft())
+                : Result.success(t.rotateRight())
+                : Result.empty());
     }
 }
 

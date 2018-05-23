@@ -4,7 +4,6 @@ import java.util.function.Supplier;
 
 import static tjava.base.TailCall.ret;
 import static tjava.base.TailCall.sus;
-import static tjava.base.MapUtils.*;
 
 public abstract class Stream<A> {
     private static Stream EMPTY = new Empty();

@@ -1,4 +1,6 @@
-package tjava.base;
+package tjava.base.utils;
+
+import tjava.base.Function;
 
 import java.util.function.Supplier;
 

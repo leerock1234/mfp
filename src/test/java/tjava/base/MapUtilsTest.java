@@ -5,7 +5,7 @@ import org.junit.Test;
 import java.util.function.Supplier;
 
 import static junit.framework.TestCase.assertEquals;
-import static tjava.base.MapUtils.smap;
+import static tjava.base.utils.MapUtils.smap;
 
 public class MapUtilsTest {
 
