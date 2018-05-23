@@ -1,4 +1,4 @@
-package tjava.simple;
+package tjava.example;
 
 import static org.junit.Assert.assertEquals;
 

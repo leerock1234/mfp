@@ -164,7 +164,7 @@ public abstract class List<A> {
 
         @Override
         public String toString() {
-            return head + ", " + this.tail().toString();
+            return this.tail().toString() + ", "+head;
         }
 
         @Override
