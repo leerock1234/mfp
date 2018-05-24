@@ -21,6 +21,8 @@ public abstract class Result<T> {
 
     public abstract void forEach(Effect<T> ef);
 
+    public abstract boolean isEmpty();
+
     public abstract void forEachOrThrow(Effect<T> ef);
 
     public abstract Result<RuntimeException> forEachOrException(Effect<T> ef);
@@ -28,6 +30,11 @@ public abstract class Result<T> {
     public abstract Result<T> mapEmpty();
 
     private static class Empty<V> extends Result<V> {
+
+        @Override
+        public boolean isEmpty(){
+            return true;
+        }
 
         @Override
         public void forEachOrThrow(Effect<V> ef) {
@@ -118,7 +125,12 @@ public abstract class Result<T> {
             ef.apply(value);
         }
 
-		@Override
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
@@ -191,6 +203,11 @@ public abstract class Result<T> {
 
 	public static class Failure<T> extends Empty<T> {
 		private final RuntimeException exception;
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
 
         @Override
         public Result<RuntimeException> forEachOrException(Effect<T> ef) {

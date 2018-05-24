@@ -236,6 +236,14 @@ public abstract class List<A> {
         return NIL;
     }
 
+    @SafeVarargs
+    public static <A> List<A> listInverse(A... a) {
+        List<A> n = list();
+        for (int i = a.length-1; i >=0; i--) {
+            n = new Cons<>(a[i], n);
+        }
+        return n;
+    }
 
     @SafeVarargs
     public static <A> List<A> list(A... a) {

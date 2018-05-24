@@ -5,99 +5,176 @@ import java.util.function.Supplier;
 import static tjava.base.TailCall.ret;
 import static tjava.base.TailCall.sus;
 
+
 public abstract class Stream<A> {
+
     private static Stream EMPTY = new Empty();
 
-    public abstract A head();
+    public abstract Tuple<A, Stream<A>> head();
 
     public abstract Stream<A> tail();
 
     public abstract Boolean isEmpty();
 
+    public abstract Tuple<Result<A>, Stream<A>> headOption();
+
     public abstract Stream<A> take(int n);
 
     public abstract Stream<A> drop(int n);
 
-    public abstract Stream<A> takeWhile(Function<A, Boolean> f);
+    public abstract Stream<A> takeWhile_(Function<A, Boolean> f);
 
-    public Stream<A> dropWhile(Function<A, Boolean> f) {
-        return _dropWhile(f).eval();
+    public abstract <B> B foldRight(Supplier<B> z, Function<A, Function<Supplier<B>, B>> f);
+
+    public Stream<A> takeViaUnfold(int n) {
+        return unfold(new Tuple<>(this, n), x -> x._1.isEmpty()
+                ? Result.empty()
+                : x._2 > 0
+                ? Result.success(new Tuple<>(x._1.head()._1, new Tuple<>(x._1.tail(), x._2 - 1)))
+                : Result.empty());
     }
 
-    public Result<A> headOption() {
-        return foldRight(Result::empty, a -> ignore -> Result.success(a));
+    public boolean forAll(Function<A, Boolean> p) {
+        return !exists(x -> !p.apply(x));
     }
 
-    public boolean exists(Function<A, Boolean> p) {
-        return _exists(p).eval();
+    public boolean forAllViaFoldRight(Function<A, Boolean> p) {
+        return foldRight(() -> true, a -> b -> p.apply(a) && b.get());
     }
 
-    protected abstract TailCall<Stream<A>> _dropWhile(Function<A, Boolean> f);
-
-    protected abstract TailCall<Boolean> _exists(Function<A, Boolean> p);
-
-    public List<A> toList() {
-        return List.reverse(toList(this, List.list()).eval());
-    }
-
-    public <B> Stream<B> map(Function<A, B> f) {
-        return foldRight(Stream::empty, a -> b -> cons(() -> f.apply(a), b));
-    }
-
-    public Stream<A> filter(Function<A, Boolean> f) {
-        //return foldRight(Stream::empty, a -> b -> f.apply(a)?cons(()->a, b):b.get());
-        return _filter(f).eval();
-    }
-
-    private TailCall<Stream<A>> _filter(Function<A, Boolean> f) {
-        TailCall<Stream<A>> sa = ret(Stream.empty());
-        return foldRight(()->sa , a -> b ->
-            f.apply(a)?ret(cons(()->a, ()->b.get().eval())):sus(()->b.get())
-        );
-    }
-
-    public Stream<A> append(Supplier<Stream<A>> s) {
-        return foldRight(s, a -> b -> cons(() -> a, b));
+    public Result<A> find(Function<A, Boolean> p) {
+        return filter(p).headOption()._1;
     }
 
     public <B> Stream<B> flatMap(Function<A, Stream<B>> f) {
         return foldRight(Stream::empty, a -> b -> f.apply(a).append(b));
     }
 
+    public Stream<A> append(Supplier<Stream<A>> s) {
+        return foldRight(s, a -> b -> cons(() -> a, b));
+    }
+
+    public Stream<A> filter(Function<A, Boolean> p) {
+        Stream<A> stream = this.dropWhile(x -> !p.apply(x));
+        return stream.isEmpty()
+                ? stream
+                : cons(() -> stream.head()._1, () -> stream.tail().filter(p));
+    }
+
+    public Stream<A> filter_(Function<A, Boolean> p) {
+        Stream<A> stream = this.dropWhile(x -> !p.apply(x));
+        return stream.headOption()._1.map(a -> cons(() -> a, () -> stream.tail().filter_(p))).getOrElse(empty());
+    }
+
+    public <B> Stream<B> map(Function<A, B> f) {
+        return foldRight(Stream::empty, a -> b -> cons(() -> f.apply(a), b));
+    }
+
+    public <B> Stream<B> mapViaUnfold(Function<A, B> f) {
+        return unfold(this, x -> x.isEmpty()
+                ? Result.empty()
+                : Result.success(new Tuple<>(f.apply(x.head()._1), x.tail())));
+    }
+
+    public Result<A> headOptionViaFoldRight() {
+        return foldRight(Result::empty, a -> ignore -> Result.success(a));
+    }
+
+    public Stream<A> takeWhile(Function<A, Boolean> f) {
+        return foldRight(Stream::empty, a -> b -> f.apply(a)
+                ? cons(() -> a, b)
+                : empty());
+    }
+
+    /**
+     * Not optimized because x._1.head() is called twice and
+     * x._1.tail() is fine because the tail does not change after calling head().
+     */
+    public Stream<A> takeWhileViaUnfold(Function<A, Boolean> f) {
+        return unfold(new Tuple<>(this, f), x -> x._1.isEmpty()
+                ? Result.empty()
+                : f.apply(x._1.head()._1)
+                ? Result.success(new Tuple<>(x._1.head()._1, new Tuple<>(x._1.tail(), f)))
+                : Result.empty());
+    }
+
+    public boolean exists(Function<A, Boolean> p) {
+        return exists(this, p).eval();
+    }
+
+    private TailCall<Boolean> exists(Stream<A> s, Function<A, Boolean> p) {
+        return s.isEmpty()
+                ? ret(false)
+                : p.apply(s.head()._1)
+                ? ret(true)
+                : sus(() -> exists(s.tail(), p));
+    }
+
+    public Stream<A> dropWhile(Function<A, Boolean> f) {
+        return dropWhile(this, f).eval();
+    }
+
+    private TailCall<Stream<A>> dropWhile(Stream<A> acc, Function<A, Boolean> f) {
+        return acc.isEmpty()
+                ? ret(acc)
+                : f.apply(acc.head()._1)
+                ? sus(() -> dropWhile(acc.tail(), f))
+                : ret(acc);
+    }
+
+    public List<A> toList() {
+        return List.reverse(toList(this, List.list()).eval());
+    }
+
     private TailCall<List<A>> toList(Stream<A> s, List<A> acc) {
         return s.isEmpty()
                 ? ret(acc)
-                : sus(() -> toList(s.tail(), List.list(s.head()).cons(acc)));
+                : sus(() -> toList(s.tail(), List.list(s.head()._1).cons(acc)));
     }
 
-    public <B> B strictFoldRight(Supplier<B> z,
-                                 Function<A, Function<Supplier<B>, B>> f){
-        return _strictFoldRight(z,f).eval();
+    public boolean hasSubSequence(Stream<A> s) {
+        return tails().exists(x -> x.startsWith(s));
     }
 
-    protected abstract <B> TailCall<B> _strictFoldRight(Supplier<B> z,
-                                                        Function<A, Function<Supplier<B>, B>> f);
-
-    public abstract <B> B foldRight(Supplier<B> z,
-                                    Function<A, Function<Supplier<B>, B>> f);
-
-    public static <A, S> Stream<A> unfold(S z,
-                                          Function<S, Result<Tuple<A, S>>> f) {
-        return f.apply(z).map(x -> cons(() -> x._1,
-                () -> unfold(x._2, f))).getOrElse(empty());
+    public boolean startsWith(Stream<A> s) {
+        return zipAll(s).takeWhile(x -> !x._2.isEmpty()).forAll(y -> y._1.equals(y._2));
     }
 
-    private Stream() {
+    public <B> Stream<Tuple<Result<A>, Result<B>>> zipAll(Stream<B> that) {
+        return zipAllGeneric(that, x -> y -> new Tuple<>(x, y));
     }
+
+    public <B, C> Stream<C> zipAllGeneric(Stream<B> that, Function<Result<A>, Function<Result<B>, C>> f) {
+        Stream<Result<A>> a = infinite(this);
+        Stream<Result<B>> b = infinite(that);
+        return unfold(new Tuple<>(a, b), x -> x._1.isEmpty() && x._2.isEmpty()
+                ? Result.empty()
+                : x._1.head()._1.isEmpty() && x._2.head()._1.isEmpty()
+                ? Result.empty()
+                : Result.success(new Tuple<>(f.apply(x._1.head()._1).apply(x._2.head()._1), new Tuple<>(x._1.tail(), x._2.tail()))));
+    }
+
+    public static <A> Stream<Result<A>> infinite(Stream<A> s) {
+        return s.map(Result::success).append(() -> repeatViaIterate(Result.empty()));
+    }
+
+    public Stream<Stream<A>> tails() {
+        return cons(() -> this, () -> unfold(this, x -> x.isEmpty()
+                ? Result.empty() // Result.<Tuple<Stream<A>,Stream<A>>>
+                : Result.success(new Tuple<>(x.tail(), x.tail())))); // Result<Tuple<Stream<A>,Stream<A>>>
+    }
+
+    private Stream() {}
 
     private static class Empty<A> extends Stream<A> {
+
         @Override
         public Stream<A> tail() {
             throw new IllegalStateException("tail called on empty");
         }
 
         @Override
-        public A head() {
+        public Tuple<A, Stream<A>> head() {
             throw new IllegalStateException("head called on empty");
         }
 
@@ -106,6 +183,12 @@ public abstract class Stream<A> {
             return true;
         }
 
+        @Override
+        public Tuple<Result<A>, Stream<A>> headOption() {
+            return new Tuple<>(Result.empty(), this);
+        }
+
+        @Override
         public Stream<A> take(int n) {
             return this;
         }
@@ -116,71 +199,51 @@ public abstract class Stream<A> {
         }
 
         @Override
-        public Stream<A> takeWhile(Function<A, Boolean> f) {
+        public Stream<A> takeWhile_(Function<A, Boolean> f) {
             return this;
-        }
-
-        @Override
-        public Stream<A> dropWhile(Function<A, Boolean> f) {
-            return this;
-        }
-
-        @Override
-        protected TailCall<Stream<A>> _dropWhile(Function<A, Boolean> f) {
-            return ret(this);
-        }
-
-        protected TailCall<Boolean> _exists(Function<A, Boolean> p) {
-            return ret(false);
-        }
-
-        @Override
-        protected <B> TailCall<B> _strictFoldRight(Supplier<B> z, Function<A, Function<Supplier<B>, B>> f) {
-            return ret(z.get());
         }
 
         @Override
         public <B> B foldRight(Supplier<B> z, Function<A, Function<Supplier<B>, B>> f) {
             return z.get();
         }
-
-        @Override
-        public String toString() {
-            return "Stream: Empty";
-        }
     }
 
     private static class Cons<A> extends Stream<A> {
 
         private final Supplier<A> head;
-        private A h;
+        private final Result<A> h;
         private final Supplier<Stream<A>> tail;
-        private Stream<A> t;
 
         private Cons(Supplier<A> h, Supplier<Stream<A>> t) {
             head = h;
             tail = t;
+            this.h = Result.empty();
+        }
+
+        private Cons(A h, Supplier<Stream<A>> t) {
+            head = () -> h;
+            tail = t;
+            this.h = Result.success(h);
         }
 
         @Override
-        public A head() {
-            if (h == null) {
-                h = head.get();
-            }
-            return h;
+        public Tuple<Result<A>, Stream<A>> headOption() {
+            Tuple<A, Stream<A>> t = head();
+            return new Tuple<>(Result.success(t._1), t._2);
         }
 
         @Override
         public Stream<A> tail() {
-            if (t == null) {
-                t = tail.get();
-            }
-            return t;
+            return tail.get();
         }
 
         @Override
-        public String toString() {
-            return "Stream: " + head().toString();
+        public Tuple<A, Stream<A>> head() {
+            A a = h.getOrElse(head.get());
+            return h.isEmpty()
+                    ? new Tuple<>(a, new Cons<>(a, tail))
+                    : new Tuple<>(a, this);
         }
 
         @Override
@@ -188,6 +251,7 @@ public abstract class Stream<A> {
             return false;
         }
 
+        @Override
         public Stream<A> take(int n) {
             return n <= 0
                     ? empty()
@@ -199,47 +263,26 @@ public abstract class Stream<A> {
             return drop(this, n).eval();
         }
 
-        public TailCall<Stream<A>> drop(Stream<A> acc, int n) {
-            return n <= 0
-                    ? ret(acc)
-                    : sus(() -> drop(acc.tail(), n - 1));
-        }
-
         @Override
-        public Stream<A> takeWhile(Function<A, Boolean> f) {
-            return foldRight(Stream::empty, a ->b->f.apply(a)
-                    ? cons(() -> a, b)
-                    : empty());
-        }
-
-        @Override
-        protected TailCall<Stream<A>> _dropWhile(Function<A, Boolean> f) {
-            return !f.apply(head.get())
-                    ? ret(this)
-                    : sus(() -> ((Cons<A>) this.tail())._dropWhile(f))
-                    ;
-        }
-
-        protected TailCall<Boolean> _exists(Function<A, Boolean> p) {
-            return p.apply(head())
-                    ? ret(true)
-                    : sus(() -> tail()._exists(p))
-                    ;
-        }
-
-        @Override
-        protected <B> TailCall<B> _strictFoldRight(Supplier<B> z, Function<A, Function<Supplier<B>, B>> f) {
-            B b = f.apply(head()).apply(z);
-            return sus(()->this.tail()._strictFoldRight(()->b, f));
+        public Stream<A> takeWhile_(Function<A, Boolean> f) {
+            return f.apply(head()._1)
+                    ? cons(head, () -> tail().takeWhile_(f))
+                    : empty();
         }
 
         @Override
         public <B> B foldRight(Supplier<B> z, Function<A, Function<Supplier<B>, B>> f) {
-            return f.apply(head()).apply(() -> tail().foldRight(z, f));
+            return f.apply(head()._1).apply(() -> tail().foldRight(z, f));
+        }
+
+        public TailCall<Stream<A>> drop(Stream<A> acc, int n) {
+            return acc.isEmpty() || n <= 0
+                    ? ret(acc)
+                    : sus(() -> drop(acc.tail(), n - 1));
         }
     }
 
-    public static <A> Stream<A> cons(Supplier<A> hd, Supplier<Stream<A>> tl) {
+    static <A> Stream<A> cons(Supplier<A> hd, Supplier<Stream<A>> tl) {
         return new Cons<>(hd, tl);
     }
 
@@ -252,16 +295,93 @@ public abstract class Stream<A> {
         return EMPTY;
     }
 
+    @SafeVarargs
+    public static <A> Stream<A> stream(A... a) {
+        return stream(List.list(a));
+    }
+
+    public static<T> Stream<T> of(List<T> list) {
+        return list.isEmpty()
+                ? Stream.empty()
+                : cons(list::head, () -> of(list.tail()));
+    }
+
+    @SafeVarargs
+    public static<A> Stream<A> of(A... array) {
+        return of(List.list(array));
+    }
+
+    public static <A> Stream<A> stream(List<A> list) {
+        return list.isEmpty()
+                ? empty()
+                : cons(list::head, () -> stream(list.tail()));
+    }
+
     public static Stream<Integer> from(int i) {
-        return iterate(i, x->x + 1);
+        return cons(() -> i, () -> from(i + 1));
+    }
+
+    public static Stream<Integer> from(Supplier<Integer> n) {
+        return cons(n, () -> from(n.get() + 1));
+    }
+
+    public static Stream<Integer> fromViaIterate(int i) {
+        return iterate(i, x -> x + 1);
+    }
+
+    public static Stream<Integer> fromViaUnfold(int n) {
+        return unfold(n, x -> Result.success(new Tuple<>(x, x + 1)));
+    }
+
+    public static Stream<Integer> range(int start, int end) {
+        return start > end
+                ? Stream.empty()
+                : cons(() -> start, () -> range(start + 1, end));
     }
 
     public static <A> Stream<A> repeat(A a) {
-        return iterate(a, x->a);
+        return cons(() -> a, () -> repeat(a));
     }
 
-    public static <A> Stream<A> iterate(A seed, Function<A, A> f){
-        return unfold(seed, x->Result.success(new Tuple<>(x,f.apply(x))));
+    public static <A> Stream<A> repeatViaIterate(A a) {
+        return iterate(a, x -> x);
+    }
+
+    public static <A> Stream<A> repeatViaUnfold(A a) {
+        return unfold(a, x -> Result.success(new Tuple<>(a, a)));
+    }
+
+    public static <A> Stream<A> iterate(Supplier<A> seed, Function<A, A> f) {
+        return cons(seed, () -> iterate(f.apply(seed.get()), f));
+    }
+
+    public static <A> Stream<A> iterate(A seed, Function<A, A> f) {
+        return cons(() -> seed, () -> iterate(f.apply(seed), f));
+    }
+
+    public static <A, S> Stream<A> unfold(S z, Function<S, Result<Tuple<A, S>>> f) {
+        return f.apply(z).map(x -> cons(() -> x._1, () -> unfold(x._2, f))).getOrElse(empty());
+    }
+
+    public static <A> Stream<A> unfold_(A z, Function<A, Result<A>> f) {
+        return f.apply(z).map(x -> cons(() -> x, () -> unfold_(x, f))).getOrElse(empty());
+    }
+
+    public static <T> Stream<T> fill(int n, Supplier<T> elem) {
+        return fill(empty(), n, elem).eval();
+    }
+
+    public static<T> TailCall<Stream<T>> fill(Stream<T> acc, int n, Supplier<T> elem) {
+        return n <= 0
+                ? ret(acc)
+                : sus(() -> fill(new Cons<T>(elem, () -> acc), n - 1, elem));
+    }
+
+    public static Stream<Integer> fibs_() {
+        return iterate(new Tuple<>(0, 1), x -> new Tuple<>(x._2, x._1 + x._2)).map(x -> x._1);
+    }
+
+    public static Stream<Integer> fibs() {
+        return unfold(new Tuple<>(1, 1), x -> Result.success(new Tuple<>(x._1, new Tuple<>(x._2, x._1 + x._2))));
     }
 }
-

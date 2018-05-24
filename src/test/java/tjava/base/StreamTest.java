@@ -24,11 +24,11 @@ public class StreamTest {
     public void takeWhile(){
         Stream<Integer> list = Stream.from(1).takeWhile(x->x<4);
 
-        assertEquals(1, list.head().intValue());
+        assertEquals(1, list.head()._1.intValue());
         list = list.tail();
-        assertEquals(2, list.head().intValue());
+        assertEquals(2, list.head()._1.intValue());
         list = list.tail();
-        assertEquals(3, list.head().intValue());
+        assertEquals(3, list.head()._1.intValue());
         list = list.tail();
         assertTrue(list.isEmpty());
     }
@@ -44,7 +44,7 @@ public class StreamTest {
     public void dropWhile() {
         Stream<Integer> list = Stream.from(1).dropWhile(x -> x < 4);
 
-        assertEquals(4, list.head().intValue());
+        assertEquals(4, list.head()._1.intValue());
     }
 
     @Test
@@ -52,7 +52,7 @@ public class StreamTest {
         final int times = 10000;
         Stream<Integer> list = Stream.from(1).dropWhile(x -> x < times);
 
-        assertEquals(times, list.head().intValue());
+        assertEquals(times, list.head()._1.intValue());
     }
 
     @Test
@@ -75,20 +75,6 @@ public class StreamTest {
         Stream<Integer> list = Stream.from(1);
 
         list.exists(x->x>=11000);
-    }
-
-    @Test
-    public void strictFoldRight(){
-        Stream<Integer> list = Stream.from(1).take(10);
-
-        assertEquals(55, list.<Integer>strictFoldRight(()->0, x-> y->y.get()+x).intValue());
-    }
-
-    @Test
-    public void strictFoldRightBigVolume(){
-        Stream<Integer> list = Stream.from(1).take(10000);
-
-        list.<Integer>strictFoldRight(()->0, x-> y->y.get()+x);
     }
 
     @Test
@@ -137,11 +123,11 @@ public class StreamTest {
 
         Stream<Integer> sList = list.filter(x->x%2==0);
 
-        assertEquals(0, sList.head().intValue());
+        assertEquals(0, sList.head()._1.intValue());
         sList = sList.tail();
-        assertEquals(2, sList.head().intValue());
+        assertEquals(2, sList.head()._1.intValue());
         sList = sList.tail();
-        assertEquals(4, sList.head().intValue());
+        assertEquals(4, sList.head()._1.intValue());
     }
 
     @Test
@@ -150,9 +136,9 @@ public class StreamTest {
 
         Stream<Integer> sList = list.filter(x->x>10000);
 
-        assertEquals(10001, sList.head().intValue());
+        assertEquals(10001, sList.head()._1.intValue());
         sList = sList.tail();
-        assertEquals(10002, sList.head().intValue());
+        assertEquals(10002, sList.head()._1.intValue());
     }
 
     @Test
@@ -163,15 +149,15 @@ public class StreamTest {
 
         Stream<Integer> adList = alist.append(()->list);
 
-        assertEquals(0, adList.head().intValue());
+        assertEquals(0, adList.head()._1.intValue());
         adList = adList.tail();
-        assertEquals(1, adList.head().intValue());
+        assertEquals(1, adList.head()._1.intValue());
         adList = adList.tail();
-        assertEquals(0, adList.head().intValue());
+        assertEquals(0, adList.head()._1.intValue());
         adList = adList.tail();
-        assertEquals(1, adList.head().intValue());
+        assertEquals(1, adList.head()._1.intValue());
         adList = adList.tail();
-        assertEquals(2, adList.head().intValue());
+        assertEquals(2, adList.head()._1.intValue());
 
     }
 
@@ -188,9 +174,9 @@ public class StreamTest {
     public void iterate(){
         Stream<Integer> list = Stream.iterate(2, x->x+2);
 
-        assertEquals(2, list.head().intValue());
+        assertEquals(2, list.head()._1.intValue());
         list = list.tail();
-        assertEquals(4, list.head().intValue());
+        assertEquals(4, list.head()._1.intValue());
     }
 
     @Test
